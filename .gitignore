@@ -1,0 +1,5 @@
+.DS_Store
+# Neovim data that should live in ~/.local, never in the repo
+nvim/*
+!nvim/init.lua
+!nvim/lazy-lock.json
