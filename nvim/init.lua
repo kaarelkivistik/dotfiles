@@ -28,14 +28,14 @@ opt.breakindent = true
 opt.list = true
 opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
 
--- Share the system clipboard locally. Over ssh, yank with "+y instead: it is
--- copied through OSC 52, which avoids slow clipboard reads on every paste.
-if not vim.env.SSH_TTY then
-  vim.schedule(function() opt.clipboard = "unnamedplus" end)
-end
-
 -- Keymaps ---------------------------------------------------------------------
 local map = vim.keymap.set
+-- The system clipboard is only touched through <leader>y/p, so d, x and c keep
+-- their vim behaviour without clobbering it. Over ssh this goes via OSC 52.
+map({ "n", "x" }, "<leader>y", '"+y', { desc = "Yank to clipboard" })
+map("n", "<leader>Y", '"+y$', { desc = "Yank to end of line to clipboard" })
+map({ "n", "x" }, "<leader>p", '"+p', { desc = "Paste clipboard after" })
+map({ "n", "x" }, "<leader>P", '"+P', { desc = "Paste clipboard before" })
 map("n", "<Esc>", "<cmd>nohlsearch<CR>")
 map("n", "<leader>w", "<cmd>write<CR>", { desc = "Save" })
 map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit" })
