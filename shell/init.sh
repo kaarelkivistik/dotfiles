@@ -21,6 +21,31 @@ if [ "$_df_shell" = zsh ] && ! (( $+functions[compdef] )); then
   autoload -Uz compinit && compinit
 fi
 
+# --- history ----------------------------------------------------------------
+HISTSIZE=100000
+if [ "$_df_shell" = zsh ]; then
+  SAVEHIST=100000
+  HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
+  setopt SHARE_HISTORY EXTENDED_HISTORY HIST_IGNORE_ALL_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS
+  # Up/Down search history for lines starting with what you've typed
+  # (bash gets the same from ~/.inputrc).
+  autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+  zle -N up-line-or-beginning-search
+  zle -N down-line-or-beginning-search
+  bindkey '^[[A' up-line-or-beginning-search
+  bindkey '^[[B' down-line-or-beginning-search
+  zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+else
+  HISTFILESIZE=100000
+  HISTCONTROL=ignoreboth:erasedups
+  shopt -s histappend
+  # Write each command to the history file as soon as it runs.
+  case "${PROMPT_COMMAND:-}" in
+    *"history -a"*) ;;
+    *) PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;
+  esac
+fi
+
 # --- neovim -----------------------------------------------------------------
 if _df_have nvim; then
   export EDITOR=nvim VISUAL=nvim
@@ -45,8 +70,17 @@ if _df_have fzf; then
   if _df_have bat; then
     export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}'"
   fi
+  if _df_have eza; then
+    export FZF_ALT_C_OPTS="--preview 'eza --tree --level=2 --color=always --icons=never {} | head -200'"
+  fi
   # Ctrl-T: files, Ctrl-R: history, Alt-C: cd into directory
   eval "$(fzf --$_df_shell)"
+fi
+
+# --- starship ---------------------------------------------------------------
+# Config: ~/.config/starship.toml. Replaces any oh-my-zsh theme.
+if _df_have starship; then
+  eval "$(starship init $_df_shell)"
 fi
 
 # --- zoxide -----------------------------------------------------------------
@@ -68,7 +102,14 @@ if _df_have yazi; then
   }
 fi
 
-alias ll='ls -lah'
+# --- eza --------------------------------------------------------------------
+if _df_have eza; then
+  alias ll='eza -lah --git --group-directories-first'
+  alias lt='eza --tree --level=2 --git-ignore'
+else
+  alias ll='ls -lah'
+fi
+
 _df_have lazygit && alias lg=lazygit
 
 # Machine-specific overrides that shouldn't live in the repo.

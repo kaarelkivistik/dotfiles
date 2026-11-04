@@ -1,0 +1,56 @@
+# Linked to ~/.gitconfig by install.sh. The e-mail (and anything else
+# machine-specific) lives in ~/.gitconfig.local, included at the bottom.
+
+[user]
+	name = Kaarel Kivistik
+
+[core]
+	# Fall back to less where delta isn't installed (e.g. --no-tools).
+	pager = "if command -v delta >/dev/null 2>&1; then delta; else less -FRX; fi"
+
+[interactive]
+	diffFilter = "if command -v delta >/dev/null 2>&1; then delta --color-only; else cat; fi"
+
+[delta]
+	navigate = true
+	line-numbers = true
+	syntax-theme = TwoDark
+
+[diff]
+	algorithm = histogram
+	colorMoved = default
+
+[merge]
+	conflictStyle = diff3
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+
+[rebase]
+	autoStash = true
+
+[rerere]
+	enabled = true
+
+[alias]
+	st = status -sb
+	co = checkout
+	sw = switch
+	br = branch
+	ci = commit
+	amend = commit --amend --no-edit
+	unstage = restore --staged
+	last = log -1 HEAD --stat
+	lg = log --graph --pretty=format:'%C(yellow)%h%C(reset) %s %C(dim)(%cr) %an%C(reset)%C(auto)%d'
+
+[include]
+	path = ~/.gitconfig.local

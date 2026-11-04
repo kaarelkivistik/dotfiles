@@ -1,0 +1,14 @@
+# Prompt config, linked to ~/.config/starship.toml. https://starship.rs/config/
+add_newline = false
+
+[directory]
+truncation_length = 4
+truncate_to_repo = true
+
+# Shown only over SSH, so you can tell which server you're on.
+[hostname]
+ssh_only = true
+format = "[$ssh_symbol$hostname]($style) "
+
+[cmd_duration]
+min_time = 2_000

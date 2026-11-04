@@ -1,0 +1,10 @@
+# Readline (bash, and other readline programs), linked to ~/.inputrc.
+$include /etc/inputrc
+
+set completion-ignore-case on
+set show-all-if-ambiguous on
+set colored-stats on
+
+# Up/Down search history for lines starting with what you've typed.
+"\e[A": history-search-backward
+"\e[B": history-search-forward

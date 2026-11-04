@@ -1,0 +1,8 @@
+# Linked into lazygit's config dir by install.sh.
+# Docs: https://github.com/jesseduffield/lazygit/blob/master/docs/Custom_DiffRenderers.md
+git:
+  # Press | to cycle through these.
+  diffRenderers:
+    - command: delta --{{colorScheme}} --paging=never {{if gt .width 160}}--side-by-side{{end}}
+    - type: rawGit
+      name: default
