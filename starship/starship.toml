@@ -12,3 +12,6 @@ format = "[$ssh_symbol$hostname]($style) "
 
 [cmd_duration]
 min_time = 2_000
+
+[gcloud]
+disabled = true
