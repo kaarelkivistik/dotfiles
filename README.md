@@ -69,6 +69,7 @@ existing file is moved to `~/.dotfiles-backup/<timestamp>/` first.
 | `starship/starship.toml` | `~/.config/starship.toml` |
 | `readline/inputrc` | `~/.inputrc`          |
 | `lazygit/config.yml` | `~/.config/lazygit/config.yml` (`~/Library/Application Support/lazygit/` on macOS) |
+| `ghostty/config` | `~/.config/ghostty/config` |
 
 **Shell.** It appends one line to `~/.bashrc` and `~/.zshrc` that sources
 `shell/init.sh`. That file works in both shells: it puts `~/.local/bin` on

@@ -1,0 +1,6 @@
+# Ghostty config. Run `ghostty +show-config --default --docs` for every option.
+# Reload with Cmd+Shift+, (macOS) or Ctrl+Shift+, (Linux).
+
+# Over ssh: install Ghostty's terminfo on the host, falling back to
+# TERM=xterm-256color if that fails.
+shell-integration-features = ssh-terminfo,ssh-env

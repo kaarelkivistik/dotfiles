@@ -218,6 +218,7 @@ link_configs() {
   link starship/starship.toml "$CONFIG/starship.toml"
   link readline/inputrc "$HOME/.inputrc"
   link lazygit/config.yml "$(lazygit_config_dir)/config.yml"
+  link ghostty/config  "$CONFIG/ghostty/config"
 }
 
 # lazygit uses ~/Library/Application Support on macOS unless XDG_CONFIG_HOME
