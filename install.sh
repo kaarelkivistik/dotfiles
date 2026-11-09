@@ -161,11 +161,22 @@ install_tmux_plugins() {
   elif [ "$UPDATE" = 1 ]; then
     git -C "$TPM" pull -q --ff-only
   fi
+  # TPM's scripts talk to a tmux server that has loaded tmux.conf. Start a
+  # throwaway one on its own socket so running sessions are left alone.
   log "Installing tmux plugins"
-  "$TPM/bin/install_plugins" >/dev/null
-  if [ "$UPDATE" = 1 ]; then
-    "$TPM/bin/update_plugins" all >/dev/null
-  fi
+  local sock
+  sock="$(mktemp -d)"
+  (
+    unset TMUX
+    export TMUX_TMPDIR="$sock"
+    tmux -f "$HOME/.tmux.conf" new-session -d
+    "$TPM/bin/install_plugins" >/dev/null
+    if [ "$UPDATE" = 1 ]; then
+      "$TPM/bin/update_plugins" all >/dev/null
+    fi
+    tmux kill-server
+  ) || warn "tmux plugin install failed; run prefix I inside tmux"
+  rm -rf "$sock"
 }
 
 # eza publishes no macOS builds.
