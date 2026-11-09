@@ -146,6 +146,28 @@ install_tmux() {
   fi
 }
 
+# TPM manages the tmux plugins listed in tmux.conf. Runs after the configs are
+# linked, since install_plugins reads ~/.tmux.conf.
+TPM="$HOME/.tmux/plugins/tpm"
+
+install_tmux_plugins() {
+  if ! have tmux || ! have git; then
+    warn "tmux or git not found; skipping tmux plugins"
+    return
+  fi
+  if [ ! -d "$TPM" ]; then
+    log "Installing tpm"
+    git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$TPM"
+  elif [ "$UPDATE" = 1 ]; then
+    git -C "$TPM" pull -q --ff-only
+  fi
+  log "Installing tmux plugins"
+  "$TPM/bin/install_plugins" >/dev/null
+  if [ "$UPDATE" = 1 ]; then
+    "$TPM/bin/update_plugins" all >/dev/null
+  fi
+}
+
 # eza publishes no macOS builds.
 install_eza() {
   if [ "$OS" = Darwin ]; then
@@ -293,6 +315,7 @@ hook_shells() {
 [ "$DO_LINKS" = 1 ] && ask_git_email
 [ "$DO_TOOLS" = 1 ] && install_tools
 [ "$DO_LINKS" = 1 ] && link_configs && set_git_email
+[ "$DO_TOOLS" = 1 ] && [ "$DO_LINKS" = 1 ] && install_tmux_plugins
 [ "$DO_SHELL" = 1 ] && hook_shells
 
 log "Done. Restart your shell or run: exec \$SHELL"

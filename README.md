@@ -52,7 +52,7 @@ and uses it to download prebuilt binaries from GitHub releases:
 | starship| Prompt for bash and zsh. Shows the hostname only over SSH          |
 | eza     | `ll` and `lt` (tree), plus the `Alt-C` preview. No macOS builds, so on macOS it prints a `brew install eza` hint |
 | jq, yq  | JSON and YAML/TOML/XML on the command line                         |
-| tmux    | No official binaries. Installed with apt/dnf/yum/pacman/zypper/apk via `sudo` on Linux. On macOS it prints a `brew install tmux` hint |
+| tmux    | No official binaries. Installed with apt/dnf/yum/pacman/zypper/apk via `sudo` on Linux. On macOS it prints a `brew install tmux` hint. Plugins (tmux-resurrect) are managed by TPM in `~/.tmux/plugins` |
 
 On Linux it picks the static musl builds, so they also run on older distros.
 
@@ -97,6 +97,9 @@ specific to the machine, and it overrides the shared settings.
 | `prefix Ctrl-h/l`   | Previous / next window          |
 | `prefix [`          | Copy mode (`v` select, `y` copy)|
 | `prefix r`          | Reload config                   |
+| `prefix Ctrl-s`     | Save sessions (tmux-resurrect)  |
+| `prefix Ctrl-r`     | Restore saved sessions          |
+| `prefix I` / `U`    | Install / update plugins (TPM)  |
 
 The mouse is on: click to focus, drag borders to resize, scroll to see history.
 
@@ -127,7 +130,7 @@ In delta, `n`/`N` jump between files.
 ## Uninstall
 
 ```sh
-rm -rf ~/.local/opt/nvim ~/.config/nvim ~/.config/yazi ~/.config/bat/config ~/.tmux.conf
+rm -rf ~/.local/opt/nvim ~/.config/nvim ~/.config/yazi ~/.config/bat/config ~/.tmux.conf ~/.tmux/plugins
 rm -f ~/.gitconfig ~/.gitconfig.local ~/.config/starship.toml ~/.inputrc
 rm -f ~/.config/lazygit/config.yml ~/Library/Application\ Support/lazygit/config.yml
 rm -f ~/.local/bin/{eget,nvim,fzf,zoxide,fd,bat,rg,lazygit,yazi,ya,delta,starship,eza,jq,yq}
