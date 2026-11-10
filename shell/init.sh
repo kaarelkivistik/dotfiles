@@ -57,6 +57,24 @@ fi
 if _df_have bat; then
   _df_have col && export MANPAGER="sh -c 'col -bx | bat -l man -p'"
   export MANROFFOPT="-c"
+  # Read the macOS appearance directly; terminal detection fails when piped.
+  [ "$(uname -s)" = Darwin ] && export BAT_THEME=auto:system
+fi
+
+# --- appearance -------------------------------------------------------------
+# Ghostty, tmux, nvim and bat follow the macOS appearance. `theme` toggles it,
+# `theme light` / `theme dark` set it.
+if [ "$(uname -s)" = Darwin ]; then
+  theme() {
+    local mode
+    case "${1:-toggle}" in
+      light) mode=false ;;
+      dark) mode=true ;;
+      toggle) mode="not dark mode" ;;
+      *) echo "usage: theme [light|dark]" >&2; return 1 ;;
+    esac
+    osascript -e "tell application \"System Events\" to tell appearance preferences to set dark mode to $mode"
+  }
 fi
 
 # --- fzf --------------------------------------------------------------------

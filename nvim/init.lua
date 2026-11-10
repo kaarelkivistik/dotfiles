@@ -53,6 +53,22 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   callback = function() vim.hl.on_yank() end,
 })
 
+-- Nvim only reads the terminal background at startup, so on macOS re-check the
+-- system appearance on focus. Changing 'background' reloads the colorscheme.
+if vim.fn.has("mac") == 1 then
+  vim.api.nvim_create_autocmd("FocusGained", {
+    desc = "Follow the macOS light/dark appearance",
+    callback = function()
+      vim.system({ "defaults", "read", "-g", "AppleInterfaceStyle" }, { text = true }, function(res)
+        local bg = (res.stdout or ""):match("Dark") and "dark" or "light"
+        vim.schedule(function()
+          if vim.o.background ~= bg then vim.o.background = bg end
+        end)
+      end)
+    end,
+  })
+end
+
 -- Plugins ---------------------------------------------------------------------
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.uv.fs_stat(lazypath) then
@@ -68,10 +84,14 @@ opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
   {
-    "folke/tokyonight.nvim",
+    -- Light or dark follows 'background', set from the terminal on startup.
+    "maxmx03/solarized.nvim",
     lazy = false,
     priority = 1000,
-    config = function() vim.cmd.colorscheme("tokyonight-night") end,
+    config = function()
+      require("solarized").setup({})
+      vim.cmd.colorscheme("solarized")
+    end,
   },
   {
     -- Fuzzy finding powered by the fzf binary installed by install.sh.

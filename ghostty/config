@@ -4,3 +4,6 @@
 # Over ssh: install Ghostty's terminfo on the host, falling back to
 # TERM=xterm-256color if that fails.
 shell-integration-features = ssh-terminfo,ssh-env
+
+# Follow the macOS appearance (Light/Dark). tmux, nvim and bat follow it too.
+theme = light:iTerm2 Solarized Light,dark:iTerm2 Solarized Dark

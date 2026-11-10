@@ -1,2 +1,6 @@
---theme="TwoDark"
+# auto picks the theme from the terminal's background. On macOS the shell
+# overrides it with BAT_THEME=auto:system, which also works when piped (fzf).
+--theme="auto"
+--theme-light="Solarized (light)"
+--theme-dark="Solarized (dark)"
 --style="numbers,changes,header"
