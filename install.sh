@@ -252,6 +252,26 @@ link_configs() {
   link readline/inputrc "$HOME/.inputrc"
   link lazygit/config.yml "$(lazygit_config_dir)/config.yml"
   link ghostty/config  "$CONFIG/ghostty/config"
+  link claude/statusline.sh "$HOME/.claude/statusline.sh"
+}
+
+# Claude Code writes its own settings.json, so point statusLine at the linked
+# script instead of linking the whole file. Leaves an existing statusLine alone.
+set_claude_statusline() {
+  local settings="$HOME/.claude/settings.json"
+  if ! have jq; then
+    warn "jq not found; set statusLine in $settings yourself"
+    return
+  fi
+  [ -f "$settings" ] || echo '{}' > "$settings"
+  if jq -e 'has("statusLine")' "$settings" >/dev/null; then
+    return
+  fi
+  local tmp
+  tmp="$(mktemp)"
+  jq '.statusLine = {type: "command", command: "~/.claude/statusline.sh"}' "$settings" > "$tmp"
+  mv "$tmp" "$settings"
+  log "Set Claude Code statusLine in $settings"
 }
 
 # lazygit uses ~/Library/Application Support on macOS unless XDG_CONFIG_HOME
@@ -325,7 +345,7 @@ hook_shells() {
 
 [ "$DO_LINKS" = 1 ] && ask_git_email
 [ "$DO_TOOLS" = 1 ] && install_tools
-[ "$DO_LINKS" = 1 ] && link_configs && set_git_email
+[ "$DO_LINKS" = 1 ] && link_configs && set_git_email && set_claude_statusline
 [ "$DO_TOOLS" = 1 ] && [ "$DO_LINKS" = 1 ] && install_tmux_plugins
 [ "$DO_SHELL" = 1 ] && hook_shells
 
