@@ -35,6 +35,14 @@ remaining() {
 out="$model"
 [ -n "$dir" ] && out+=" · ${dir/#$HOME/~}"
 
+# Older versions lack used_percentage; derive it from the last request's usage.
+ctx=$(jq -r '.context_window // empty
+  | .used_percentage // (
+      (.current_usage // empty) as $u | (.context_window_size // empty) as $size
+      | ($u.input_tokens + $u.cache_creation_input_tokens + $u.cache_read_input_tokens) * 100 / $size
+    ) // empty' <<<"$input")
+[ -n "$ctx" ] && out+=" · ctx $(pct "$ctx")"
+
 read -r s_used s_reset w_used w_reset < <(jq -r '[
   .rate_limits.five_hour.used_percentage // "",
   .rate_limits.five_hour.resets_at // "",
