@@ -72,10 +72,11 @@ existing file is moved to `~/.dotfiles-backup/<timestamp>/` first.
 | `ghostty/config` | `~/.config/ghostty/config` |
 | `claude/statusline.sh` | `~/.claude/statusline.sh` |
 
-**Claude Code.** The status line shows the model, directory, how full the
-context window is, and how much of the 5-hour session and weekly plan limits
-you've used (green, yellow from 50%, red from 80%), with the time until each
-resets. Usage appears after the first
+**Claude Code.** The status line shows the model and directory on the left
+and, right-aligned, bars for how full the context window is and how much of
+the 5-hour session and weekly plan limits you've used (green, yellow from 50%,
+red from 80%), with the time until each resets. If the bars overshoot or stop
+short of the right edge, adjust `MARGIN` in the script. Usage appears after the first
 response in a session. If `~/.claude/settings.json` has no `statusLine` yet,
 the installer adds one pointing at the script.
 
