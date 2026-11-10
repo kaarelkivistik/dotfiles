@@ -70,6 +70,13 @@ existing file is moved to `~/.dotfiles-backup/<timestamp>/` first.
 | `readline/inputrc` | `~/.inputrc`          |
 | `lazygit/config.yml` | `~/.config/lazygit/config.yml` (`~/Library/Application Support/lazygit/` on macOS) |
 | `ghostty/config` | `~/.config/ghostty/config` |
+| `claude/statusline.sh` | `~/.claude/statusline.sh` |
+
+**Claude Code.** The status line shows the model, directory, and how much of
+the 5-hour session and weekly plan limits you've used (green, yellow from 50%,
+red from 80%), with the time until each resets. Usage appears after the first
+response in a session. If `~/.claude/settings.json` has no `statusLine` yet,
+the installer adds one pointing at the script.
 
 **Shell.** It appends one line to `~/.bashrc` and `~/.zshrc` that sources
 `shell/init.sh`. That file works in both shells: it puts `~/.local/bin` on
@@ -131,7 +138,7 @@ In delta, `n`/`N` jump between files.
 
 ```sh
 rm -rf ~/.local/opt/nvim ~/.config/nvim ~/.config/yazi ~/.config/bat/config ~/.tmux.conf ~/.tmux/plugins
-rm -f ~/.gitconfig ~/.gitconfig.local ~/.config/starship.toml ~/.inputrc
+rm -f ~/.gitconfig ~/.gitconfig.local ~/.config/starship.toml ~/.inputrc ~/.claude/statusline.sh
 rm -f ~/.config/lazygit/config.yml ~/Library/Application\ Support/lazygit/config.yml
 rm -f ~/.local/bin/{eget,nvim,fzf,zoxide,fd,bat,rg,lazygit,yazi,ya,delta,starship,eza,jq,yq}
 # restore anything you want back from ~/.dotfiles-backup/
