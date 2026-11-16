@@ -6,10 +6,11 @@
 
 [core]
 	# Fall back to less where delta isn't installed (e.g. --no-tools).
-	pager = "if command -v delta >/dev/null 2>&1; then delta; else less -FRX; fi"
+	# BAT_THEME=auto:system (set for bat on macOS) is unknown to delta, so drop it.
+	pager = "if command -v delta >/dev/null 2>&1; then env -u BAT_THEME delta; else less -FRX; fi"
 
 [interactive]
-	diffFilter = "if command -v delta >/dev/null 2>&1; then delta --color-only; else cat; fi"
+	diffFilter = "if command -v delta >/dev/null 2>&1; then env -u BAT_THEME delta --color-only; else cat; fi"
 
 [delta]
 	navigate = true

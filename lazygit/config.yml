@@ -3,6 +3,6 @@
 git:
   # Press | to cycle through these.
   diffRenderers:
-    - command: delta --{{colorScheme}} --paging=never {{if gt .width 160}}--side-by-side{{end}}
+    - command: env -u BAT_THEME delta --{{colorScheme}} --paging=never {{if gt .width 160}}--side-by-side{{end}}
     - type: rawGit
       name: default
