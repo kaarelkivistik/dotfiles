@@ -24,7 +24,7 @@ the default without asking.
 
 | Option        | Effect                                                  |
 | ------------- | ------------------------------------------------------- |
-| `-u, --update`| Reinstall every tool from its latest GitHub release     |
+| `-u, --update`| Reinstall every tool and tmux plugin at its pinned version |
 | `--git-email ADDR` | Set the git e-mail without prompting               |
 | `--no-tools`  | Only link configs and hook the shell                    |
 | `--no-links`  | Don't touch config files                                |
@@ -55,6 +55,14 @@ and uses it to download prebuilt binaries from GitHub releases:
 | tmux    | No official binaries. Installed with apt/dnf/yum/pacman/zypper/apk via `sudo` on Linux. On macOS it prints a `brew install tmux` hint. Plugins (tmux-resurrect) are managed by TPM in `~/.tmux/plugins` |
 
 On Linux it picks the static musl builds, so they also run on older distros.
+
+**Versions.** Every tool is pinned to a release tag at the top of `install.sh`
+(eget and TPM too). tmux-resurrect is pinned in `tmux/tmux.conf`
+(`'tmux-plugins/tmux-resurrect#v4.0.0'`), and lazy.nvim and the Neovim plugins
+in `nvim/lazy-lock.json`. To upgrade, bump the tag and re-run `install.sh`. It
+records installed versions in `~/.local/opt/versions` and reinstalls only what
+changed. For Neovim plugins, run `:Lazy update` and commit the lockfile.
+tmux and eza on macOS come from Homebrew and aren't pinned.
 
 **Configs.** It symlinks these from the repo, so `git pull` updates them. Any
 existing file is moved to `~/.dotfiles-backup/<timestamp>/` first.
@@ -108,7 +116,7 @@ specific to the machine, and it overrides the shared settings.
 | `prefix r`          | Reload config                   |
 | `prefix Ctrl-s`     | Save sessions (tmux-resurrect)  |
 | `prefix Ctrl-r`     | Restore saved sessions          |
-| `prefix I` / `U`    | Install / update plugins (TPM)  |
+| `prefix I`          | Install plugins (TPM)           |
 
 The mouse is on: click to focus, drag borders to resize, scroll to see history.
 

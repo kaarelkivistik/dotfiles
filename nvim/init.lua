@@ -77,7 +77,7 @@ if not vim.uv.fs_stat(lazypath) then
     vim.cmd.colorscheme("habamax")
     return
   end
-  vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable",
+  vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=v11.17.5",
     "https://github.com/folke/lazy.nvim.git", lazypath })
 end
 opt.rtp:prepend(lazypath)

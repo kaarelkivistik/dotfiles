@@ -11,6 +11,25 @@ BACKUP="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 
 DEFAULT_GIT_EMAIL="kaarelkivistik@gmail.com"
 
+# Pinned release tags. To upgrade a tool, bump its tag here and re-run
+# install.sh: tools whose pin changed are reinstalled. tmux-resurrect is
+# pinned in tmux/tmux.conf and lazy.nvim/plugins in nvim/lazy-lock.json.
+EGET_VERSION=v1.3.4
+NVIM_VERSION=v0.12.6
+FZF_VERSION=v0.75.0
+ZOXIDE_VERSION=v0.10.0
+FD_VERSION=v10.5.2
+BAT_VERSION=v0.26.1
+RG_VERSION=15.2.0
+LAZYGIT_VERSION=v0.66.3
+YAZI_VERSION=v26.9.1
+DELTA_VERSION=0.20.1
+STARSHIP_VERSION=v1.27.0
+JQ_VERSION=jq-1.8.2
+YQ_VERSION=v4.54.3
+EZA_VERSION=v0.23.5
+TPM_VERSION=v3.1.0
+
 UPDATE=0
 GIT_EMAIL=""
 DO_TOOLS=1
@@ -26,7 +45,8 @@ usage() {
   cat <<EOF
 Usage: $0 [options]
 
-  -u, --update     Reinstall tools even if already present (pulls latest releases)
+  -u, --update     Reinstall tools and tmux plugins at their pinned versions,
+                   even if already installed
   --git-email ADDR Git e-mail to use without prompting (default: $DEFAULT_GIT_EMAIL)
   --no-tools       Skip installing tools
   --no-links       Skip symlinking config files
@@ -62,45 +82,75 @@ esac
 # Tools
 # ---------------------------------------------------------------------------
 
+# Each installed tool gets a stamp file holding the tag it was installed at,
+# so a bumped pin triggers a reinstall.
+STAMPS="$OPT/versions"
+
+# needs_install <name> <file> <version>: true if <file> is missing, was
+# installed at a different version, or --update was given.
+needs_install() {
+  [ "$UPDATE" = 1 ] || [ ! -x "$2" ] ||
+    [ "$(cat "$STAMPS/$1" 2>/dev/null)" != "$3" ]
+}
+
+stamp() {
+  mkdir -p "$STAMPS"
+  echo "$2" > "$STAMPS/$1"
+}
+
+# eget_platform: eget's release asset suffix for this machine.
+eget_platform() {
+  local os arch
+  os="$(echo "$OS" | tr '[:upper:]' '[:lower:]')"
+  case "$(uname -m)" in
+    arm64|aarch64) arch=arm64 ;;
+    arm*)          arch=arm ;;
+    x86_64|amd64)  arch=amd64 ;;
+    i?86)          arch=386 ;;
+    *) die "Unsupported architecture for eget: $(uname -m)" ;;
+  esac
+  echo "${os}_${arch}"
+}
+
 install_eget() {
-  if [ -x "$BIN/eget" ] && [ "$UPDATE" = 0 ]; then
-    return
-  fi
-  log "Installing eget"
-  local tmp
+  needs_install eget "$BIN/eget" "$EGET_VERSION" || return 0
+  log "Installing eget $EGET_VERSION"
+  local tmp ver name url
   tmp="$(mktemp -d)"
+  ver="${EGET_VERSION#v}"
+  name="eget-$ver-$(eget_platform)"
+  url="https://github.com/zyedidia/eget/releases/download/$EGET_VERSION/$name.tar.gz"
   if have curl; then
-    curl -fsSL https://zyedidia.github.io/eget.sh -o "$tmp/eget.sh"
+    curl -fsSL "$url" -o "$tmp/eget.tar.gz"
   elif have wget; then
-    wget -qO "$tmp/eget.sh" https://zyedidia.github.io/eget.sh
+    wget -qO "$tmp/eget.tar.gz" "$url"
   else
     die "Need curl or wget to download eget"
   fi
-  (cd "$tmp" && bash eget.sh >/dev/null)
-  mv "$tmp/eget" "$BIN/eget"
+  tar -xzf "$tmp/eget.tar.gz" -C "$tmp" "$name/eget"
+  mv "$tmp/$name/eget" "$BIN/eget"
   rm -rf "$tmp"
+  stamp eget "$EGET_VERSION"
 }
 
-# eget_tool <binary-name> <owner/repo> [extra eget args...]
+# eget_tool <binary-name> <version> <owner/repo> [extra eget args...]
 eget_tool() {
-  local name="$1"; shift
-  if [ -x "$BIN/$name" ] && [ "$UPDATE" = 0 ]; then
-    return
-  fi
-  log "Installing $name"
-  "$BIN/eget" "$@" --to "$BIN/$name"
+  local name="$1" version="$2"; shift 2
+  needs_install "$name" "$BIN/$name" "$version" || return 0
+  log "Installing $name $version"
+  "$BIN/eget" "$@" --tag "$version" --to "$BIN/$name"
+  stamp "$name" "$version"
 }
 
 # Neovim needs its runtime files next to the binary, so unpack the whole
 # release tarball into ~/.local/opt/nvim and symlink the binary.
 install_nvim() {
-  if [ -x "$OPT/nvim/bin/nvim" ] && [ "$UPDATE" = 0 ]; then
-    return
-  fi
-  log "Installing nvim"
+  needs_install nvim "$OPT/nvim/bin/nvim" "$NVIM_VERSION" || return 0
+  log "Installing nvim $NVIM_VERSION"
   local tmp archive
   tmp="$(mktemp -d)"
-  (cd "$tmp" && "$BIN/eget" neovim/neovim --asset .tar.gz --asset ^sha --download-only)
+  (cd "$tmp" && "$BIN/eget" neovim/neovim --tag "$NVIM_VERSION" \
+    --asset .tar.gz --asset ^sha --download-only)
   archive="$(find "$tmp" -name '*.tar.gz' | head -n 1)"
   [ -n "$archive" ] || die "Could not download Neovim"
   rm -rf "$OPT/nvim"
@@ -108,6 +158,7 @@ install_nvim() {
   tar -xzf "$archive" -C "$OPT/nvim" --strip-components=1
   ln -sfn "$OPT/nvim/bin/nvim" "$BIN/nvim"
   rm -rf "$tmp"
+  stamp nvim "$NVIM_VERSION"
 }
 
 # tmux has no official prebuilt binaries, so use the system package manager.
@@ -156,10 +207,19 @@ install_tmux_plugins() {
     return
   fi
   if [ ! -d "$TPM" ]; then
-    log "Installing tpm"
-    git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$TPM"
-  elif [ "$UPDATE" = 1 ]; then
-    git -C "$TPM" pull -q --ff-only
+    log "Installing tpm $TPM_VERSION"
+    git -c advice.detachedHead=false clone -q --depth 1 --branch "$TPM_VERSION" https://github.com/tmux-plugins/tpm "$TPM"
+  elif [ "$(git -C "$TPM" describe --tags --exact-match 2>/dev/null)" != "$TPM_VERSION" ]; then
+    log "Switching tpm to $TPM_VERSION"
+    git -C "$TPM" fetch -q --depth 1 origin tag "$TPM_VERSION"
+    git -C "$TPM" -c advice.detachedHead=false checkout -q "$TPM_VERSION"
+  fi
+  # TPM clones each plugin at the ref after '#' in its @plugin line but never
+  # moves an existing clone, so wipe the plugins when those lines change.
+  local plugins
+  plugins="$(grep -E "^set -g @plugin" "$DOTFILES/tmux/tmux.conf")"
+  if [ "$UPDATE" = 1 ] || [ "$(cat "$STAMPS/tmux-plugins" 2>/dev/null)" != "$plugins" ]; then
+    find "$HOME/.tmux/plugins" -mindepth 1 -maxdepth 1 ! -name tpm -exec rm -rf {} +
   fi
   # TPM's scripts talk to a tmux server that has loaded tmux.conf. Start a
   # throwaway one on its own socket so running sessions are left alone.
@@ -171,11 +231,9 @@ install_tmux_plugins() {
     export TMUX_TMPDIR="$sock"
     tmux -f "$HOME/.tmux.conf" new-session -d
     "$TPM/bin/install_plugins" >/dev/null
-    if [ "$UPDATE" = 1 ]; then
-      "$TPM/bin/update_plugins" all >/dev/null
-    fi
     tmux kill-server
-  ) || warn "tmux plugin install failed; run prefix I inside tmux"
+  ) && stamp tmux-plugins "$plugins" ||
+    warn "tmux plugin install failed; run prefix I inside tmux"
   rm -rf "$sock"
 }
 
@@ -185,7 +243,7 @@ install_eza() {
     have eza || warn "eza not found; install it with: brew install eza"
     return
   fi
-  eget_tool eza eza-community/eza --asset .tar.gz --asset ^no_libgit "$@"
+  eget_tool eza "$EZA_VERSION" eza-community/eza --asset .tar.gz --asset ^no_libgit "$@"
 }
 
 install_tools() {
@@ -205,18 +263,18 @@ install_tools() {
 
   install_eget
   install_nvim
-  eget_tool fzf     junegunn/fzf
-  eget_tool zoxide  ajeetdsouza/zoxide --asset .tar.gz
-  eget_tool fd      sharkdp/fd         --asset .tar.gz "${libc[@]+"${libc[@]}"}"
-  eget_tool bat     sharkdp/bat        --asset .tar.gz "${libc[@]+"${libc[@]}"}"
-  eget_tool rg      BurntSushi/ripgrep --asset .tar.gz --asset ^sha "${libc[@]+"${libc[@]}"}"
-  eget_tool lazygit jesseduffield/lazygit --asset .tar.gz
-  eget_tool yazi    sxyazi/yazi        --asset .zip "${libc[@]+"${libc[@]}"}" --file yazi
-  eget_tool ya      sxyazi/yazi        --asset .zip "${libc[@]+"${libc[@]}"}" --file ya
-  eget_tool delta   dandavison/delta   --asset .tar.gz "${musl_x86[@]+"${musl_x86[@]}"}"
-  eget_tool starship starship/starship --asset .tar.gz "${libc[@]+"${libc[@]}"}"
-  eget_tool jq      jqlang/jq          --asset ^osx --asset ^linux64 --asset ^attestation
-  eget_tool yq      mikefarah/yq       --asset ^.tar.gz --asset ^checksums --asset ^bundle
+  eget_tool fzf      "$FZF_VERSION"      junegunn/fzf
+  eget_tool zoxide   "$ZOXIDE_VERSION"   ajeetdsouza/zoxide --asset .tar.gz
+  eget_tool fd       "$FD_VERSION"       sharkdp/fd         --asset .tar.gz "${libc[@]+"${libc[@]}"}"
+  eget_tool bat      "$BAT_VERSION"      sharkdp/bat        --asset .tar.gz "${libc[@]+"${libc[@]}"}"
+  eget_tool rg       "$RG_VERSION"       BurntSushi/ripgrep --asset .tar.gz --asset ^sha "${libc[@]+"${libc[@]}"}"
+  eget_tool lazygit  "$LAZYGIT_VERSION"  jesseduffield/lazygit --asset .tar.gz
+  eget_tool yazi     "$YAZI_VERSION"     sxyazi/yazi        --asset .zip "${libc[@]+"${libc[@]}"}" --file yazi
+  eget_tool ya       "$YAZI_VERSION"     sxyazi/yazi        --asset .zip "${libc[@]+"${libc[@]}"}" --file ya
+  eget_tool delta    "$DELTA_VERSION"    dandavison/delta   --asset .tar.gz "${musl_x86[@]+"${musl_x86[@]}"}"
+  eget_tool starship "$STARSHIP_VERSION" starship/starship  --asset .tar.gz "${libc[@]+"${libc[@]}"}"
+  eget_tool jq       "$JQ_VERSION"       jqlang/jq          --asset ^osx --asset ^linux64 --asset ^attestation
+  eget_tool yq       "$YQ_VERSION"       mikefarah/yq       --asset ^.tar.gz --asset ^checksums --asset ^bundle
   install_eza "${musl_x86[@]+"${musl_x86[@]}"}"
   install_tmux
 }
