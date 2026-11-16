@@ -41,7 +41,7 @@ and uses it to download prebuilt binaries from GitHub releases:
 | Tool    | Notes                                                              |
 | ------- | ------------------------------------------------------------------ |
 | neovim  | Full release unpacked to `~/.local/opt/nvim`, symlinked into `~/.local/bin` |
-| fzf     | `Ctrl-T` files, `Ctrl-R` history, `Alt-C` cd                        |
+| fzf     | `Ctrl-T` files, `Ctrl-R` history, `Alt-C` cd (in Ghostty on macOS, Alt is the left Option key) |
 | zoxide  | `z foo` jumps to a frecent dir, `zi` picks one with fzf             |
 | fd      | Used as fzf's file source                                          |
 | bat     | Used for fzf previews and as `MANPAGER`                            |

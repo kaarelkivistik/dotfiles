@@ -5,5 +5,9 @@
 # TERM=xterm-256color if that fails.
 shell-integration-features = ssh-terminfo,ssh-env
 
+# macOS: left Option sends Alt (fzf's Alt-C, readline's Alt-B/F, ...), right
+# Option still types special characters like č or š.
+macos-option-as-alt = left
+
 # Follow the macOS appearance (Light/Dark). tmux, nvim and bat follow it too.
 theme = light:iTerm2 Solarized Light,dark:iTerm2 Solarized Dark
