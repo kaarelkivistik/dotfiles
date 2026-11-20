@@ -50,6 +50,22 @@ remaining() {
   fi
 }
 
+# Inside tmux, record the session's folder on its pane so popups (prefix
+# g/y/t) open there; see tmux/pane-dir. Only when this script really runs
+# under that pane: background sessions can inherit a stale TMUX_PANE.
+if [ -n "$TMUX_PANE" ] && [ -n "$dir" ]; then
+  pane_pid=$(tmux display-message -p -t "$TMUX_PANE" '#{pane_pid}' 2>/dev/null)
+  pid=$PPID
+  for _ in 1 2 3 4 5 6; do
+    { [ -z "$pid" ] || [ "$pid" -le 1 ]; } && break
+    if [ "$pid" = "$pane_pid" ]; then
+      tmux set-option -p -t "$TMUX_PANE" @claude_cwd "$dir" 2>/dev/null
+      break
+    fi
+    pid=$(ps -o ppid= -p "$pid" | tr -d ' ')
+  done
+fi
+
 left="$model"
 [ -n "$dir" ] && left+=" · ${dir/#$HOME/~}"
 right=""

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# scratch <dir>: attach to the persistent "scratch" session (prefix t), on a
+# shell window for <dir>. Each folder keeps its own shell and history, so
+# closing the popup and reopening it from the same folder picks up where you
+# left off; `exit` ends that folder's shell.
+set -euo pipefail
+dir=${1:-$PWD}
+
+if ! tmux has-session -t '=scratch' 2>/dev/null; then
+  read -r sess win < <(tmux new-session -d -P -F '#{session_id} #{window_id}' -s scratch -c "$dir")
+  tmux set-option -t "$sess" status off
+else
+  win=$(tmux list-windows -t '=scratch' -F '#{window_id}	#{@scratch_dir}' |
+    awk -F '\t' -v d="$dir" '$2 == d { print $1; exit }')
+  [ -n "$win" ] || win=$(tmux new-window -d -P -F '#{window_id}' -t '=scratch:' -c "$dir")
+fi
+tmux set-option -w -t "$win" @scratch_dir "$dir"
+tmux select-window -t "$win"
+
+# We run inside a popup of this same server, so clear TMUX to allow attaching.
+TMUX= exec tmux attach-session -t '=scratch'

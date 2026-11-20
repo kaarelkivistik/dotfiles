@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# pane-dir <pane-id>: the folder tmux popups (prefix g/y/t) should open in.
+#
+# For a pane running Claude Code this is the folder Claude is working in,
+# not the one it was started from:
+#   - agents view: the folder of the highlighted row, read from the
+#     "New sessions: … · <folder>" header line;
+#   - single session: the session's current folder (it follows worktree
+#     switches), which claude/statusline.sh stores in the pane option
+#     @claude_cwd.
+# Any other pane, or when neither is found, gives the pane's own folder.
+pane=${1:?usage: pane-dir <pane-id>}
+# Match the header bytewise, whatever locale tmux runs us in.
+export LC_ALL=C
+
+IFS=$'\t' read -r cmd path < <(
+  tmux display-message -p -t "$pane" '#{pane_current_command}	#{pane_current_path}'
+)
+
+# The native Claude binary can show up under its version number.
+if [[ $cmd == claude* || $cmd =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  header=$(tmux capture-pane -p -t "$pane" -S 0 -E 6 |
+    sed -n 's/.*New sessions:.* · \(.*[^[:space:]]\)[[:space:]]*$/\1/p' | head -n 1)
+  dir=${header/#\~/$HOME}
+  if [ -n "$header" ] && [ -d "$dir" ]; then
+    printf '%s\n' "$dir"
+    exit 0
+  fi
+
+  dir=$(tmux show-options -pqv -t "$pane" @claude_cwd)
+  if [ -n "$dir" ] && [ -d "$dir" ]; then
+    printf '%s\n' "$dir"
+    exit 0
+  fi
+fi
+
+printf '%s\n' "${path:-$HOME}"
