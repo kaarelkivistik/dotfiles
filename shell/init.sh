@@ -140,6 +140,31 @@ if _df_have fzf; then
   }
 fi
 
+# --- dotfiles ---------------------------------------------------------------
+# dotup [install.sh options]: re-run install.sh (e.g. after a pull or merge),
+# reload tmux's config, then restart this shell so it picks up the changes.
+# Keeps this machine's git e-mail instead of asking. `dotup -u` reinstalls
+# tools at their pinned versions; see `~/.dotfiles/install.sh --help`.
+dotup() {
+  local email
+  email="$(git config --file "$HOME/.gitconfig.local" user.email 2>/dev/null)"
+  if [ -n "$email" ]; then
+    "${DOTFILES_DIR:-$HOME/.dotfiles}/install.sh" --git-email "$email" "$@" || return
+  else
+    "${DOTFILES_DIR:-$HOME/.dotfiles}/install.sh" "$@" || return
+  fi
+  if [ -n "${TMUX:-}" ]; then
+    tmux source-file "$HOME/.tmux.conf" && tmux display-message "Config reloaded"
+  fi
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    if [[ -o login ]]; then exec zsh -l; else exec zsh; fi
+  elif shopt -q login_shell 2>/dev/null; then
+    exec bash -l
+  else
+    exec bash
+  fi
+}
+
 # Machine-specific overrides that shouldn't live in the repo.
 [ -f "$HOME/.shell.local" ] && . "$HOME/.shell.local"
 
