@@ -16,7 +16,8 @@ else
 fi
 # Close the popup when the last scratch shell exits, rather than switching it
 # to another session (detach-on-destroy is off globally in tmux.conf).
-tmux set-option -t '=scratch' detach-on-destroy on
+# The trailing colon matters: set-option rejects a bare '=scratch' target.
+tmux set-option -t '=scratch:' detach-on-destroy on
 tmux set-option -w -t "$win" @scratch_dir "$dir"
 tmux select-window -t "$win"
 
