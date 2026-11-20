@@ -253,6 +253,7 @@ link_configs() {
   link lazygit/config.yml "$(lazygit_config_dir)/config.yml"
   link ghostty/config  "$CONFIG/ghostty/config"
   link claude/statusline.sh "$HOME/.claude/statusline.sh"
+  link git/wt-pick      "$BIN/wt-pick"
 }
 
 # Claude Code writes its own settings.json, so point statusLine at the linked
