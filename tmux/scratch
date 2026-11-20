@@ -14,6 +14,9 @@ else
     awk -F '\t' -v d="$dir" '$2 == d { print $1; exit }')
   [ -n "$win" ] || win=$(tmux new-window -d -P -F '#{window_id}' -t '=scratch:' -c "$dir")
 fi
+# Close the popup when the last scratch shell exits, rather than switching it
+# to another session (detach-on-destroy is off globally in tmux.conf).
+tmux set-option -t '=scratch' detach-on-destroy on
 tmux set-option -w -t "$win" @scratch_dir "$dir"
 tmux select-window -t "$win"
 

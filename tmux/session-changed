@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# session-changed <client>: run by tmux's client-session-changed hook.
+# Remembers each client's session; when the remembered one no longer exists,
+# the change came from that session being destroyed (detach-on-destroy off
+# moved the client to the most recent session), so switch the client to the
+# last session in the list instead. The scratch session is never a target.
+client=$1
+session=$(tmux display-message -p -c "$client" "#{client_session}")
+key="@session_of_$(printf %s "$client" | tr -c '[:alnum:]' _)"
+prev=$(tmux show-options -gqv "$key")
+
+if [ -n "$prev" ] && ! tmux has-session -t "=$prev" 2>/dev/null; then
+  last=$(tmux list-sessions -F '#{session_name}' | grep -vx scratch | tail -n1)
+  if [ -n "$last" ] && [ "$last" != "$session" ]; then
+    tmux set-option -g "$key" "$last"
+    exec tmux switch-client -c "$client" -t "=$last"
+  fi
+fi
+tmux set-option -g "$key" "$session"

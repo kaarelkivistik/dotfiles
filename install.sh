@@ -315,6 +315,7 @@ link_configs() {
   link tmux/pane-dir    "$BIN/pane-dir"
   link tmux/scratch     "$BIN/tmux-scratch"
   link tmux/session     "$BIN/tmux-session"
+  link tmux/session-changed "$BIN/tmux-session-changed"
 }
 
 # Claude Code writes its own settings.json, so point statusLine at the linked
