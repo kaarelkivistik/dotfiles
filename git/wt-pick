@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# wt-pick [--tmux] [query]: fuzzy-pick a git worktree of the current repo.
+#
+# Prints the chosen worktree's path. The `wt` shell function cds into it.
+# With --tmux (prefix W), it switches to a window of this session that is
+# already in that worktree, or opens a new window there.
+set -euo pipefail
+
+tmux_mode=0
+if [ "${1:-}" = --tmux ]; then
+  tmux_mode=1
+  shift
+fi
+
+fail() {
+  if [ "$tmux_mode" = 1 ]; then
+    tmux display-message "wt: $*"
+  else
+    echo "wt: $*" >&2
+  fi
+  exit 1
+}
+
+git rev-parse --git-dir >/dev/null 2>&1 || fail "not in a git repository"
+
+# One "path<TAB>branch" line per worktree; bare repos have no checkout.
+list() {
+  git worktree list --porcelain | awk '
+    function emit() { if (p != "" && !bare) print p "\t" b; p = ""; b = ""; bare = 0 }
+    /^worktree / { emit(); p = substr($0, 10) }
+    /^branch /   { b = substr($0, 8); sub(/^refs\/heads\//, "", b) }
+    /^detached/  { b = "(detached)" }
+    /^bare/      { bare = 1 }
+    END          { emit() }
+  '
+}
+
+# The current worktree goes last, so Enter on the first line always moves you.
+here="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+choice="$(
+  list | awk -F '\t' -v here="$here" '$1 == here { last = $0; next } { print } END { if (last != "") print last }' |
+    fzf --query="${1:-}" --select-1 --exit-0 \
+      --delimiter='\t' --with-nth='2,1' --tabstop=4 \
+      --prompt='worktree> ' \
+      --preview 'git -C {1} -c color.status=always status -sb; echo; git -C {1} log --oneline --color=always -15'
+)" || exit 0
+dir="${choice%%$'\t'*}"
+[ -n "$dir" ] || exit 0
+
+if [ "$tmux_mode" = 0 ]; then
+  printf '%s\n' "$dir"
+  exit 0
+fi
+
+# Reuse a window whose pane is already somewhere in that worktree. Compare
+# worktree roots rather than path prefixes, since worktrees can be nested
+# (e.g. .claude/worktrees/ inside the main checkout).
+while IFS=' ' read -r win path; do
+  if [ "$(git -C "$path" rev-parse --show-toplevel 2>/dev/null)" = "$dir" ]; then
+    tmux select-window -t "$win"
+    exit 0
+  fi
+done < <(tmux list-panes -s -F '#{window_id} #{pane_current_path}')
+
+tmux new-window -c "$dir"

@@ -130,6 +130,16 @@ fi
 
 _df_have lazygit && alias lg=lazygit
 
+# --- git worktrees ----------------------------------------------------------
+# wt [query] fuzzy-picks a worktree of the current repo and cds into it
+# (tmux: prefix W opens it in a window instead).
+if _df_have fzf; then
+  wt() {
+    local dir
+    dir="$(wt-pick "$@")" && [ -n "$dir" ] && builtin cd -- "$dir"
+  }
+fi
+
 # Machine-specific overrides that shouldn't live in the repo.
 [ -f "$HOME/.shell.local" ] && . "$HOME/.shell.local"
 
