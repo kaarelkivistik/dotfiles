@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
-# scratch <dir>: attach to the persistent "scratch" session (prefix t), on a
-# shell window for <dir>. Each folder keeps its own shell and history, so
-# closing the popup and reopening it from the same folder picks up where you
-# left off; `exit` ends that folder's shell.
+# scratch [dir]: attach to the persistent "scratch" session (prefix t), a
+# single shell that survives closing the popup. If it is already running it is
+# reused as is, wherever it is; otherwise it starts in [dir] (default: the
+# current folder, which prefix t sets to the pane's folder, or the folder
+# Claude is in for a Claude pane). `exit` ends it.
 set -euo pipefail
 dir=${1:-$PWD}
 
 if ! tmux has-session -t '=scratch' 2>/dev/null; then
-  read -r sess win < <(tmux new-session -d -P -F '#{session_id} #{window_id}' -s scratch -c "$dir")
-  tmux set-option -t "$sess" status off
-else
-  win=$(tmux list-windows -t '=scratch' -F '#{window_id}	#{@scratch_dir}' |
-    awk -F '\t' -v d="$dir" '$2 == d { print $1; exit }')
-  [ -n "$win" ] || win=$(tmux new-window -d -P -F '#{window_id}' -t '=scratch:' -c "$dir")
+  tmux new-session -d -s scratch -c "$dir"
+  tmux set-option -t '=scratch:' status off
+  # Close the popup when the shell exits, rather than switching it to another
+  # session (detach-on-destroy is off globally in tmux.conf). The trailing
+  # colon matters: set-option rejects a bare '=scratch' target.
+  tmux set-option -t '=scratch:' detach-on-destroy on
 fi
-# Close the popup when the last scratch shell exits, rather than switching it
-# to another session (detach-on-destroy is off globally in tmux.conf).
-# The trailing colon matters: set-option rejects a bare '=scratch' target.
-tmux set-option -t '=scratch:' detach-on-destroy on
-tmux set-option -w -t "$win" @scratch_dir "$dir"
-tmux select-window -t "$win"
 
 # We run inside a popup of this same server, so clear TMUX to allow attaching.
 TMUX= exec tmux attach-session -t '=scratch'
