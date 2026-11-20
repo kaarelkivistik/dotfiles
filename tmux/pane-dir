@@ -1,37 +1,61 @@
 #!/usr/bin/env bash
-# pane-dir <pane-id>: the folder tmux popups (prefix g/y/t) should open in.
+# pane-dir <pane-id>: the folder tmux popups (prefix g/y/t) and prefix S
+# should use.
 #
 # For a pane running Claude Code this is the folder Claude is working in,
 # not the one it was started from:
 #   - agents view: the folder of the highlighted row, read from the
 #     "New sessions: … · <folder>" header line;
-#   - single session: the session's current folder (it follows worktree
-#     switches), which claude/statusline.sh stores in the pane option
-#     @claude_cwd.
-# Any other pane, or when neither is found, gives the pane's own folder.
+#   - a session opened from the agents view: the pane title is the
+#     session's name; its job in ~/.claude/jobs gives the transcript, whose
+#     last "cwd" follows worktree switches;
+#   - a plain `claude` session: its current folder, which
+#     claude/statusline.sh stores in the pane option @claude_cwd.
+# Any other pane, or when none of these is found, gives the pane's own folder.
 pane=${1:?usage: pane-dir <pane-id>}
-# Match the header bytewise, whatever locale tmux runs us in.
-export LC_ALL=C
 
-IFS=$'\t' read -r cmd path < <(
-  tmux display-message -p -t "$pane" '#{pane_current_command}	#{pane_current_path}'
-)
+# One call each: without a UTF-8 locale tmux prints a tab separator as "_".
+cmd=$(tmux display-message -p -t "$pane" '#{pane_current_command}')
+path=$(tmux display-message -p -t "$pane" '#{pane_current_path}')
+title=$(tmux display-message -p -t "$pane" '#{pane_title}')
+
+found() {
+  if [ -n "$1" ] && [ -d "$1" ]; then
+    printf '%s\n' "$1"
+    exit 0
+  fi
+}
+
+# job_dir <session name>: current folder of the background job with that name.
+job_dir() {
+  local state transcript dir
+  [ -n "$1" ] || return 0
+  state=$(grep -lF "\"name\": \"$1\"" ~/.claude/jobs/*/state.json 2>/dev/null | head -n 1)
+  [ -n "$state" ] || return 0
+  transcript=$(jq -r '.linkScanPath // empty' "$state")
+  if [ ! -f "$transcript" ]; then
+    transcript=$(ls -t ~/.claude/projects/*/"$(jq -r '.sessionId' "$state")".jsonl 2>/dev/null | head -n 1)
+  fi
+  if [ -f "$transcript" ]; then
+    dir=$(tail -c 500000 "$transcript" | grep -o '"cwd":"[^"]*"' | tail -n 1 | cut -d '"' -f 4)
+  fi
+  printf '%s\n' "${dir:-$(jq -r '.cwd // empty' "$state")}"
+}
 
 # The native Claude binary can show up under its version number.
 if [[ $cmd == claude* || $cmd =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  # Match bytewise whatever the locale. (Not for tmux itself: in the C
+  # locale it prints tabs as "_".)
   header=$(tmux capture-pane -p -t "$pane" -S 0 -E 6 |
-    sed -n 's/.*New sessions:.* · \(.*[^[:space:]]\)[[:space:]]*$/\1/p' | head -n 1)
-  dir=${header/#\~/$HOME}
-  if [ -n "$header" ] && [ -d "$dir" ]; then
-    printf '%s\n' "$dir"
-    exit 0
-  fi
+    LC_ALL=C sed -n 's/.*New sessions:.* · \(.*[^[:space:]]\)[[:space:]]*$/\1/p' | head -n 1)
+  [ -n "$header" ] && found "${header/#\~/$HOME}"
 
-  dir=$(tmux show-options -pqv -t "$pane" @claude_cwd)
-  if [ -n "$dir" ] && [ -d "$dir" ]; then
-    printf '%s\n' "$dir"
-    exit 0
-  fi
+  # Titles can carry a leading status glyph such as "✳ ".
+  name=$(printf '%s' "$title" | LC_ALL=C sed 's/^[^[:alnum:]]* //')
+  found "$(job_dir "$name")"
+  [ "$name" != "$title" ] && found "$(job_dir "$title")"
+
+  found "$(tmux show-options -pqv -t "$pane" @claude_cwd)"
 fi
 
 printf '%s\n' "${path:-$HOME}"

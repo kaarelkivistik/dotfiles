@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# tmux-session <dir> [client]: switch to the tmux session for <dir>, creating
+# it there if needed (prefix S). The session is named after the folder; if
+# another folder already uses that name, the parent folder is added
+# ("parent-name").
+set -euo pipefail
+dir=${1:?usage: tmux-session <dir> [client]}
+client=${2:-}
+[ "$dir" = / ] || dir=${dir%/}
+
+# tmux session names cannot contain "." or ":"; ".dotfiles" becomes "dotfiles".
+clean() { printf '%s' "$1" | sed 's/^\.*//' | tr '.:' '__'; }
+
+# session_for <name>: id of the session called <name>, and whether it belongs
+# to $dir (its @session_dir, or for sessions made without this script its
+# start folder).
+session_for() {
+  tmux list-sessions -F '#{session_id}	#{session_name}	#{@session_dir}	#{session_path}' 2>/dev/null |
+    awk -F '\t' -v n="$1" -v d="$dir" '
+      $2 == n { mine = ($3 != "" ? $3 == d : $4 == d); print $1 "\t" mine; exit }'
+}
+
+id="" mine=""
+for name in "$(clean "$(basename "$dir")")" \
+            "$(clean "$(basename "$(dirname "$dir")")-$(basename "$dir")")"; do
+  IFS=$'\t' read -r id mine < <(session_for "$name") || true
+  [ -z "$id" ] || [ "$mine" = 1 ] && break
+done
+# Both names taken by other folders: reuse the second one anyway.
+
+if [ -z "$id" ]; then
+  id=$(tmux new-session -d -P -F '#{session_id}' -s "$name" -c "$dir")
+  mine=1
+fi
+[ "$mine" = 1 ] && tmux set-option -t "$id" @session_dir "$dir"
+tmux switch-client ${client:+-c "$client"} -t "$id"

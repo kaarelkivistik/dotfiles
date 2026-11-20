@@ -314,6 +314,7 @@ link_configs() {
   link git/wt-pick      "$BIN/wt-pick"
   link tmux/pane-dir    "$BIN/pane-dir"
   link tmux/scratch     "$BIN/tmux-scratch"
+  link tmux/session     "$BIN/tmux-session"
 }
 
 # Claude Code writes its own settings.json, so point statusLine at the linked
